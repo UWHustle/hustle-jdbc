@@ -15,3 +15,7 @@ gradle-app.setting
 
 # IDE
 .idea/
+
+# Hustle
+*.hsl
+hustlecatalog.pb.bin

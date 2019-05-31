@@ -1,0 +1,12 @@
+[package]
+name = "hustle-jni"
+version = "0.1.0"
+authors = ["gaffneyk <kgaff33@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+hustle-api = { path = "../../../../../hustle/api" }
+jni = "0.12.3"
+
+[lib]
+crate-type = ["cdylib"]

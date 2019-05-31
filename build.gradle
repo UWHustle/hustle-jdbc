@@ -14,3 +14,16 @@ repositories {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
+
+task cargoBuild(type: Exec) {
+    commandLine 'cargo', 'build',
+            '--release',
+            '--manifest-path', 'src/main/rust/hustle-jni/Cargo.toml',
+            '--target-dir', 'build/rust'
+}
+
+build.dependsOn cargoBuild
+
+test {
+    jvmArgs = ['-Djava.library.path=build/rust/release']
+}
