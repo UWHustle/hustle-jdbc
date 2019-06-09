@@ -4,55 +4,60 @@ extern crate jni;
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jboolean, jint};
-use hustle_api::connection::HustleConnection;
-use hustle_api::statement::HustleStatement;
-use hustle_api::result::HustleResult;
+use hustle_api::{HustleConnection, HustleResult};
 
 #[no_mangle]
 pub extern "system" fn Java_HustleJNI_hustleConnectionNew(
-    _env: JNIEnv,
-    _class: JClass
+    env: JNIEnv,
+    _class: JClass,
+    url: JString
 ) -> jlong {
-    Box::into_raw(Box::new(HustleConnection::new())) as jlong
+    let url_string: String = env.get_string(url)
+        .expect("Could not get URL from Java")
+        .into();
+    Box::into_raw(Box::new(HustleConnection::connect(url_string).unwrap())) as jlong
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_HustleJNI_hustleConnectionPrepare(
+pub unsafe extern "system" fn Java_HustleJNI_hustleConnectionExecuteQuery(
     env: JNIEnv,
     _class: JClass,
     connection_ptr: jlong,
     sql: JString
 ) -> jlong {
-    let connection = &*(connection_ptr as *mut HustleConnection);
+    let connection = &mut *(connection_ptr as *mut HustleConnection);
     let sql_string: String = env.get_string(sql)
         .expect("Could not get SQL from Java")
         .into();
-    Box::into_raw(Box::new(connection.prepare(&sql_string))) as jlong
+    connection.execute(sql_string)
+        .map(|result| Box::into_raw(Box::new(result.unwrap())) as jlong)
+        .unwrap_or(0 as jlong)
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_HustleJNI_hustlePreparedStatementExecuteQuery(
-    _env: JNIEnv,
+pub unsafe extern "system" fn Java_HustleJNI_hustleConnectionExecuteUpdate(
+    env: JNIEnv,
     _class: JClass,
-    prepared_statement_ptr: jlong
-) -> jlong {
-    let statement = &mut *(prepared_statement_ptr as *mut HustleStatement);
-    match statement.execute() {
-        Ok(result) => result
-            .map(|r| Box::into_raw(Box::new(r)) as jlong)
-            .unwrap_or(0 as jlong),
-        Err(_error) => 0 as jlong
-    }
+    connection_ptr: jlong,
+    sql: JString
+) -> jint {
+    let connection = &mut *(connection_ptr as *mut HustleConnection);
+    let sql_string: String = env.get_string(sql)
+        .expect("Could not get SQL from Java")
+        .into();
+    let _ = connection.execute(sql_string);
+    0 as jint
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_HustleJNI_hustleResultNext(
+pub unsafe extern "system" fn Java_HustleJNI_hustleResultHasRow(
     _env: JNIEnv,
     _class: JClass,
-    result_ptr: jlong
+    result_ptr: jlong,
+    row: jint,
 ) -> jboolean {
-    let result = &mut *(result_ptr as *mut HustleResult);
-    result.step() as jboolean
+    let result = &*(result_ptr as *mut HustleResult);
+    result.get_row(row as usize).is_some() as jboolean
 }
 
 #[no_mangle]
@@ -60,8 +65,9 @@ pub unsafe extern "system" fn Java_HustleJNI_hustleResultGetLong(
     _env: JNIEnv,
     _class: JClass,
     result_ptr: jlong,
-    column_index: jint
+    row: jint,
+    col: jint,
 ) -> jlong {
-    let result = &mut *(result_ptr as *mut HustleResult);
-    result.get_i64(column_index as usize).unwrap() as jlong
+    let result = &*(result_ptr as *mut HustleResult);
+    result.get_row(row as usize).unwrap().get_i64(col as usize).unwrap()
 }

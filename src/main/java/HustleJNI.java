@@ -3,13 +3,13 @@ public class HustleJNI {
 		System.loadLibrary("hustle_jni");
 	}
 
-	public static native long hustleConnectionNew();
+	public static native long hustleConnectionNew(String url);
 
-	public static native long hustleConnectionPrepare(long connectionPtr, String sql);
+	public static native long hustleConnectionExecuteQuery(long connectionPtr, String sql);
 
-	public static native long hustlePreparedStatementExecuteQuery(long preparedStatementPtr);
+	public static native int hustleConnectionExecuteUpdate(long connectionPtr, String sql);
 
-	public static native boolean hustleResultNext(long resultPtr);
+	public static native boolean hustleResultHasRow(long resultPtr, int row);
 
-	public static native long hustleResultGetLong(long resultPtr, int columnIndex);
+	public static native long hustleResultGetLong(long resultPtr, int row, int col);
 }

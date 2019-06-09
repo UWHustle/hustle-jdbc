@@ -17,6 +17,7 @@ dependencies {
 
 task cargoBuild(type: Exec) {
     commandLine 'cargo', 'build',
+            '-vv',
             '--release',
             '--manifest-path', 'src/main/rust/hustle-jni/Cargo.toml',
             '--target-dir', 'build/rust'

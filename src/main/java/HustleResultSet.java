@@ -7,7 +7,8 @@ import java.util.Calendar;
 import java.util.Map;
 
 public class HustleResultSet implements ResultSet {
-	long resultPtr;
+	private long resultPtr;
+	private int rowIndex = -1;
 
 	HustleResultSet(long resultPtr) {
 		this.resultPtr = resultPtr;
@@ -15,7 +16,8 @@ public class HustleResultSet implements ResultSet {
 
 	@Override
 	public boolean next() {
-		return HustleJNI.hustleResultNext(this.resultPtr);
+		rowIndex++;
+		return HustleJNI.hustleResultHasRow(resultPtr, rowIndex);
 	}
 
 	@Override
@@ -55,7 +57,7 @@ public class HustleResultSet implements ResultSet {
 
 	@Override
 	public long getLong(int columnIndex) {
-		return HustleJNI.hustleResultGetLong(this.resultPtr, columnIndex);
+		return HustleJNI.hustleResultGetLong(resultPtr, rowIndex, columnIndex);
 	}
 
 	@Override

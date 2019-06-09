@@ -9,7 +9,7 @@ public class HustleDriver implements Driver {
 
 	@Override
 	public HustleConnection connect(String url, Properties info) {
-		return new HustleConnection();
+		return new HustleConnection(url);
 	}
 
 	@Override

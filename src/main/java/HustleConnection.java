@@ -4,12 +4,12 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 public class HustleConnection implements Connection {
+	private long connectionPtr;
 	private boolean autoCommit = false;
 	private boolean isClosed = false;
-	private long connectionPtr;
 
-	HustleConnection() {
-		this.connectionPtr = HustleJNI.hustleConnectionNew();
+	HustleConnection(String url) {
+		connectionPtr = HustleJNI.hustleConnectionNew(url);
 	}
 
 	@Override
@@ -19,8 +19,7 @@ public class HustleConnection implements Connection {
 
 	@Override
 	public HustlePreparedStatement prepareStatement(String sql) {
-		long preparedStatementPtr = HustleJNI.hustleConnectionPrepare(this.connectionPtr, sql);
-		return new HustlePreparedStatement(sql, preparedStatementPtr);
+		return new HustlePreparedStatement(connectionPtr, sql);
 	}
 
 	@Override
@@ -40,12 +39,12 @@ public class HustleConnection implements Connection {
 
 	@Override
 	public boolean getAutoCommit() {
-		return this.autoCommit;
+		return autoCommit;
 	}
 
 	@Override
 	public void commit() throws SQLException {
-		if (this.getAutoCommit()) {
+		if (getAutoCommit()) {
 			throw new SQLException("Connection is in auto-commit mode.");
 		}
 		System.out.println("COMMIT;");
@@ -58,13 +57,13 @@ public class HustleConnection implements Connection {
 
 	@Override
 	public void close() throws SQLException {
-		this.isClosed = true;
+		isClosed = true;
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
 	public boolean isClosed() {
-		return this.isClosed;
+		return isClosed;
 	}
 
 	@Override

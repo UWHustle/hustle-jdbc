@@ -5,35 +5,30 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.regex.Pattern;
 
 public class HustlePreparedStatement implements PreparedStatement {
-	private String sql;
-	private Object[] params;
-	private long preparedStatementPtr;
+	private long connectionPtr;
+	private String[] statement;
+	private String[] params;
 
-	HustlePreparedStatement(String sql, long preparedStatementPtr) {
-		this.sql = sql;
-		this.preparedStatementPtr = preparedStatementPtr;
-
-		int n_params = 0;
-		for (int i = 0; i < sql.length(); i++) {
-			if (sql.charAt(i) == '?') {
-				n_params++;
-			}
-		}
-
-		params = new Object[n_params];
+	HustlePreparedStatement(long connectionPtr, String sql) {
+		this.connectionPtr = connectionPtr;
+		statement = sql.split(Pattern.quote("?"));
+		params = new String[statement.length - 1];
 	}
 
 	@Override
-	public HustleResultSet executeQuery() {
-		long resultPtr = HustleJNI.hustlePreparedStatementExecuteQuery(this.preparedStatementPtr);
+	public HustleResultSet executeQuery() throws SQLException {
+		String sql = bindParams();
+		long resultPtr = HustleJNI.hustleConnectionExecuteQuery(connectionPtr, sql);
 		return new HustleResultSet(resultPtr);
 	}
 
 	@Override
 	public int executeUpdate() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		String sql = bindParams();
+		return HustleJNI.hustleConnectionExecuteUpdate(connectionPtr, sql);
 	}
 
 	@Override
@@ -48,22 +43,22 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setByte(int parameterIndex, byte x) {
-		this.params[parameterIndex - 1] = String.valueOf(x);
+		setString(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setShort(int parameterIndex, short x) {
-		this.params[parameterIndex - 1] = String.valueOf(x);
+		setString(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setInt(int parameterIndex, int x) {
-		this.params[parameterIndex - 1] = String.valueOf(x);
+		setString(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setLong(int parameterIndex, long x) {
-		this.params[parameterIndex - 1] = String.valueOf(x);
+		setString(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
@@ -73,7 +68,7 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setDouble(int parameterIndex, double x) {
-		this.params[parameterIndex - 1] = String.valueOf(x);
+		setString(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
@@ -83,7 +78,7 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setString(int parameterIndex, String x) {
-		this.params[parameterIndex - 1] = x;
+		params[parameterIndex - 1] = x;
 	}
 
 	@Override
@@ -124,7 +119,7 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void clearParameters() {
-		Arrays.fill(this.params, null);
+		Arrays.fill(params, null);
 	}
 
 	@Override
@@ -520,5 +515,21 @@ public class HustlePreparedStatement implements PreparedStatement {
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		throw new SQLFeatureNotSupportedException();
+	}
+
+	private String bindParams() throws SQLException {
+		for (String param : params) {
+			if (param.isEmpty()) {
+				throw new SQLException("Statement has unbound parameters");
+			}
+		}
+
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < params.length; i++) {
+			sb.append(statement[i]);
+			sb.append(params[i]);
+		}
+		sb.append(statement[statement.length - 1]);
+		return sb.toString();
 	}
 }
