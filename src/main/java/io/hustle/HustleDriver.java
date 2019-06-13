@@ -1,20 +1,34 @@
-import java.sql.Driver;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
+package io.hustle;
+
+import java.sql.*;
 import java.util.Properties;
 import java.util.logging.Logger;
 
 public class HustleDriver implements Driver {
 
-	@Override
-	public HustleConnection connect(String url, Properties info) {
-		return new HustleConnection(url);
+	private static final String PREFIX = "jdbc:hustle://";
+
+	static {
+		try {
+			DriverManager.registerDriver(new HustleDriver());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
-	public boolean acceptsURL(String url) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public HustleConnection connect(String url, Properties info) {
+		if (!acceptsURL(url)) {
+			return null;
+		}
+
+		url = url.trim();
+		return new HustleConnection(url.substring(PREFIX.length()));
+	}
+
+	@Override
+	public boolean acceptsURL(String url) {
+		return url != null && url.toLowerCase().startsWith(PREFIX);
 	}
 
 	@Override
@@ -24,7 +38,7 @@ public class HustleDriver implements Driver {
 
 	@Override
 	public int getMajorVersion() {
-		return 0;
+		return 1;
 	}
 
 	@Override

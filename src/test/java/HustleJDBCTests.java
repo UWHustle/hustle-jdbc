@@ -1,17 +1,31 @@
+import io.hustle.HustleConnection;
+import io.hustle.HustleResultSet;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.sql.Driver;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Enumeration;
 
 public class HustleJDBCTests {
 
 	@Test
 	public void prepareStatementTest() {
-		HustleDriver driver = new HustleDriver();
-		HustleConnection conn = driver.connect("127.0.0.1:8000", null);
+		try {
+			Class.forName("io.hustle.HustleDriver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		Enumeration<Driver> drivers = DriverManager.getDrivers();
+		while (drivers.hasMoreElements()) {
+			System.out.println(drivers.nextElement().toString());
+		}
 
 		try {
-			conn.prepareStatement("DROP TABLE t;").executeUpdate();
+			HustleConnection conn = (HustleConnection) DriverManager.getConnection("jdbc:hustle://127.0.0.1:8000", "user", "password");
+			conn.prepareStatement("DROP TABLE IF EXISTS t;").executeUpdate();
 			conn.prepareStatement("CREATE TABLE t (a BIGINT, b BIGINT);").executeUpdate();
 			conn.prepareStatement("INSERT INTO t VALUES (1, 2);").executeUpdate();
 			conn.prepareStatement("INSERT INTO t VALUES (3, 4);").executeUpdate();

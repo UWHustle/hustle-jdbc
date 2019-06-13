@@ -1,3 +1,5 @@
+package io.hustle;
+
 public class HustleJNI {
 	static {
 		System.loadLibrary("hustle_jni");
@@ -8,6 +10,10 @@ public class HustleJNI {
 	public static native long hustleConnectionExecuteQuery(long connectionPtr, String sql);
 
 	public static native int hustleConnectionExecuteUpdate(long connectionPtr, String sql);
+
+	public static native boolean hustleConnectionExecute(long connectionPtr, String sql);
+
+	public static native void hustleConnectionClose(long connectionPtr);
 
 	public static native boolean hustleResultHasRow(long resultPtr, int row);
 

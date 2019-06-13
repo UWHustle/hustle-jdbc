@@ -1,3 +1,5 @@
+package io.hustle;
+
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -5,21 +7,23 @@ import java.util.concurrent.Executor;
 
 public class HustleConnection implements Connection {
 	private long connectionPtr;
-	private boolean autoCommit = false;
+	private HustleDatabaseMetaData metaData = null;
+	private boolean autoCommit = true;
 	private boolean isClosed = false;
+	private boolean begin = false;
 
 	HustleConnection(String url) {
 		connectionPtr = HustleJNI.hustleConnectionNew(url);
 	}
 
 	@Override
-	public Statement createStatement() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public Statement createStatement() {
+		return new HustleStatement(this);
 	}
 
 	@Override
 	public HustlePreparedStatement prepareStatement(String sql) {
-		return new HustlePreparedStatement(connectionPtr, sql);
+		return new HustlePreparedStatement(this, sql);
 	}
 
 	@Override
@@ -34,7 +38,14 @@ public class HustleConnection implements Connection {
 
 	@Override
 	public void setAutoCommit(boolean autoCommit) {
-		this.autoCommit = autoCommit;
+		if (this.autoCommit != autoCommit) {
+			this.autoCommit = autoCommit;
+			if (autoCommit) {
+				ensureCommit();
+			} else {
+				ensureBegin();
+			}
+		}
 	}
 
 	@Override
@@ -43,22 +54,21 @@ public class HustleConnection implements Connection {
 	}
 
 	@Override
-	public void commit() throws SQLException {
-		if (getAutoCommit()) {
-			throw new SQLException("Connection is in auto-commit mode.");
-		}
-		System.out.println("COMMIT;");
+	public synchronized void commit() {
+		ensureBegin();
+		HustleJNI.hustleConnectionExecute(connectionPtr, "COMMIT;");
+		begin = false;
 	}
 
 	@Override
-	public void rollback() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public void rollback() {
+
 	}
 
 	@Override
-	public void close() throws SQLException {
+	public void close() {
 		isClosed = true;
-		throw new SQLFeatureNotSupportedException();
+		HustleJNI.hustleConnectionClose(connectionPtr);
 	}
 
 	@Override
@@ -67,8 +77,11 @@ public class HustleConnection implements Connection {
 	}
 
 	@Override
-	public DatabaseMetaData getMetaData() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public DatabaseMetaData getMetaData() {
+		if (metaData == null) {
+			metaData = new HustleDatabaseMetaData();
+		}
+		return metaData;
 	}
 
 	@Override
@@ -92,13 +105,15 @@ public class HustleConnection implements Connection {
 	}
 
 	@Override
-	public void setTransactionIsolation(int level) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public void setTransactionIsolation(int level) throws SQLFeatureNotSupportedException {
+		if (level != Connection.TRANSACTION_SERIALIZABLE) {
+			throw new SQLFeatureNotSupportedException();
+		}
 	}
 
 	@Override
-	public int getTransactionIsolation() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public int getTransactionIsolation() {
+		return Connection.TRANSACTION_SERIALIZABLE;
 	}
 
 	@Override
@@ -284,5 +299,40 @@ public class HustleConnection implements Connection {
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		throw new SQLFeatureNotSupportedException();
+	}
+
+	boolean execute(String sql) {
+		ensureBegin();
+		boolean result = HustleJNI.hustleConnectionExecute(connectionPtr, sql);
+		ensureCommit();
+		return result;
+	}
+
+	int executeUpdate(String sql) {
+		ensureBegin();
+		int result = HustleJNI.hustleConnectionExecuteUpdate(connectionPtr, sql);
+		ensureCommit();
+		return result;
+	}
+
+	HustleResultSet executeQuery(String sql) {
+		ensureBegin();
+		long resultPtr = HustleJNI.hustleConnectionExecuteQuery(connectionPtr, sql);
+		ensureCommit();
+		return new HustleResultSet(resultPtr);
+	}
+
+	private synchronized void ensureBegin() {
+		if (!begin) {
+			HustleJNI.hustleConnectionExecute(connectionPtr, "BEGIN;");
+			begin = true;
+		}
+	}
+
+	private synchronized void ensureCommit() {
+		if (autoCommit) {
+			HustleJNI.hustleConnectionExecute(connectionPtr, "COMMIT;");
+			begin = false;
+		}
 	}
 }

@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group 'io.hustle'
-version '1.0-SNAPSHOT'
+version '1.0'
 
 sourceCompatibility = 1.8
 
@@ -15,6 +16,11 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
+task cargoUpdate(type: Exec) {
+    commandLine 'cargo', 'update',
+            '--manifest-path', 'src/main/rust/hustle-jni/Cargo.toml'
+}
+
 task cargoBuild(type: Exec) {
     commandLine 'cargo', 'build',
             '-vv',
@@ -23,8 +29,20 @@ task cargoBuild(type: Exec) {
             '--target-dir', 'build/rust'
 }
 
+cargoBuild.dependsOn cargoUpdate
 build.dependsOn cargoBuild
 
 test {
     jvmArgs = ['-Djava.library.path=build/rust/release']
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'io.hustle'
+            artifactId = 'hustle-jdbc'
+            version = '1.0'
+            from components.java
+        }
+    }
 }

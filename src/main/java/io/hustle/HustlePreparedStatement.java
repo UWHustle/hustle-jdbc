@@ -1,3 +1,5 @@
+package io.hustle;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -7,28 +9,26 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 
-public class HustlePreparedStatement implements PreparedStatement {
-	private long connectionPtr;
+public class HustlePreparedStatement extends HustleStatement implements PreparedStatement {
 	private String[] statement;
 	private String[] params;
 
-	HustlePreparedStatement(long connectionPtr, String sql) {
-		this.connectionPtr = connectionPtr;
-		statement = sql.split(Pattern.quote("?"));
+	HustlePreparedStatement(HustleConnection conn, String sql) {
+		super(conn);
+		statement = sql.split(Pattern.quote("?"), -1);
 		params = new String[statement.length - 1];
 	}
 
 	@Override
 	public HustleResultSet executeQuery() throws SQLException {
 		String sql = bindParams();
-		long resultPtr = HustleJNI.hustleConnectionExecuteQuery(connectionPtr, sql);
-		return new HustleResultSet(resultPtr);
+		return super.executeQuery(sql);
 	}
 
 	@Override
 	public int executeUpdate() throws SQLException {
 		String sql = bindParams();
-		return HustleJNI.hustleConnectionExecuteUpdate(connectionPtr, sql);
+		return super.executeUpdate(sql);
 	}
 
 	@Override
@@ -43,22 +43,22 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setByte(int parameterIndex, byte x) {
-		setString(parameterIndex, String.valueOf(x));
+		setParam(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setShort(int parameterIndex, short x) {
-		setString(parameterIndex, String.valueOf(x));
+		setParam(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setInt(int parameterIndex, int x) {
-		setString(parameterIndex, String.valueOf(x));
+		setParam(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
 	public void setLong(int parameterIndex, long x) {
-		setString(parameterIndex, String.valueOf(x));
+		setParam(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
@@ -68,7 +68,7 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setDouble(int parameterIndex, double x) {
-		setString(parameterIndex, String.valueOf(x));
+		setParam(parameterIndex, String.valueOf(x));
 	}
 
 	@Override
@@ -78,7 +78,7 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public void setString(int parameterIndex, String x) {
-		params[parameterIndex - 1] = x;
+		setParam(parameterIndex, '\'' + x + '\'');
 	}
 
 	@Override
@@ -134,12 +134,14 @@ public class HustlePreparedStatement implements PreparedStatement {
 
 	@Override
 	public boolean execute() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		String sql = bindParams();
+		return super.execute(sql);
 	}
 
 	@Override
 	public void addBatch() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		String sql = bindParams();
+		super.addBatch(sql);
 	}
 
 	@Override
@@ -297,229 +299,13 @@ public class HustlePreparedStatement implements PreparedStatement {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	@Override
-	public ResultSet executeQuery(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int executeUpdate(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void close() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getMaxFieldSize() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setMaxFieldSize(int max) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getMaxRows() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setMaxRows(int max) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setEscapeProcessing(boolean enable) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getQueryTimeout() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void cancel() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public SQLWarning getWarnings() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void clearWarnings() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setCursorName(String name) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean execute(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public ResultSet getResultSet() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getUpdateCount() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean getMoreResults() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setFetchDirection(int direction) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getFetchDirection() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setFetchSize(int rows) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getFetchSize() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getResultSetConcurrency() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getResultSetType() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void addBatch(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void clearBatch() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int[] executeBatch() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public Connection getConnection() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean getMoreResults(int current) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public ResultSet getGeneratedKeys() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean execute(String sql, String[] columnNames) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public int getResultSetHoldability() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean isClosed() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void setPoolable(boolean poolable) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean isPoolable() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public void closeOnCompletion() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
-	}
-
-	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	private void setParam(int parameterIndex, String x) {
+		params[parameterIndex - 1] = x;
 	}
 
 	private String bindParams() throws SQLException {
 		for (String param : params) {
-			if (param.isEmpty()) {
+			if (param == null || param.isEmpty()) {
 				throw new SQLException("Statement has unbound parameters");
 			}
 		}
