@@ -324,7 +324,7 @@ public class HustleConnection implements Connection {
 
 	private synchronized void ensureBegin() {
 		if (!begin) {
-			HustleJNI.hustleConnectionExecute(connectionPtr, "BEGIN;");
+			HustleJNI.hustleConnectionExecute(connectionPtr, "BEGIN");
 			begin = true;
 		}
 	}

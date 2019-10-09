@@ -5,7 +5,7 @@ authors = ["gaffneyk <kgaff33@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-hustle-api = { git = "https://github.com/UWHustle/hustle", branch = "transaction-management" }
+hustle-api = { git = "https://github.com/UWHustle/hustle", branch = "ycsb" }
 jni = "0.12.3"
 
 [lib]
